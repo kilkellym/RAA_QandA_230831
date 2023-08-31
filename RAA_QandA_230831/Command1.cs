@@ -37,7 +37,7 @@ namespace RAA_QandA_230831
             FilteredElementCollector viewCollector = new FilteredElementCollector(doc, curView.Id);
 
             List<ElementId> wallIdList = new List<ElementId>();
-            foreach (Element curElem in collector)
+            foreach (Element curElem in walls)
             {
                 wallIdList.Add(curElem.Id);
             }
@@ -62,7 +62,8 @@ namespace RAA_QandA_230831
                     
                 }
                 
-                //curView.UnhideElements(wallIdList);
+                curView.UnhideElements(wallIdList);
+
                 t.Commit();
             }
 
