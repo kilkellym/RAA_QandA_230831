@@ -1,0 +1,89 @@
+#region Namespaces
+using Autodesk.Revit.ApplicationServices;
+using Autodesk.Revit.Attributes;
+using Autodesk.Revit.DB;
+using Autodesk.Revit.UI;
+using Autodesk.Revit.UI.Selection;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
+using System.Linq;
+
+#endregion
+
+namespace RAA_QandA_230831
+{
+    [Transaction(TransactionMode.Manual)]
+    public class Command1 : IExternalCommand
+    {
+        public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
+        {
+            // this is a variable for the Revit application
+            UIApplication uiapp = commandData.Application;
+
+            // this is a variable for the current Revit model
+            Document doc = uiapp.ActiveUIDocument.Document;
+
+            // Your code goes here
+            FilteredElementCollector collector = new FilteredElementCollector(doc);
+            collector.OfClass(typeof(Wall));
+            IList<Wall> walls = collector.Cast<Wall>().Where(w => w.WallType.Kind == WallKind.Curtain).ToList();
+
+            TaskDialog.Show("Test", $"There are {walls.Count} curtain walls in this project.");
+
+            View curView = doc.ActiveView;
+
+            FilteredElementCollector viewCollector = new FilteredElementCollector(doc, curView.Id);
+
+            List<ElementId> wallIdList = new List<ElementId>();
+            foreach (Element curElem in collector)
+            {
+                wallIdList.Add(curElem.Id);
+            }
+
+            using(Transaction t = new Transaction(doc))
+            {
+                t.Start("Show curtain walls");
+
+                foreach(Element curElem in viewCollector)
+                {
+                    List<ElementId> elementIds = new List<ElementId>();
+                    elementIds.Add(curElem.Id);
+
+                    try
+                    {
+                        curView.HideElements(elementIds);
+                    }
+                    catch (Exception)
+                    {
+                        Debug.Print("Could not hide element");
+                    }
+                    
+                }
+                
+                //curView.UnhideElements(wallIdList);
+                t.Commit();
+            }
+
+
+            return Result.Succeeded;
+        }
+        internal static PushButtonData GetButtonData()
+        {
+            // use this method to define the properties for this command in the Revit ribbon
+            string buttonInternalName = "btnCommand1";
+            string buttonTitle = "Button 1";
+
+            ButtonDataClass myButtonData1 = new ButtonDataClass(
+                buttonInternalName,
+                buttonTitle,
+                MethodBase.GetCurrentMethod().DeclaringType?.FullName,
+                Properties.Resources.Blue_32,
+                Properties.Resources.Blue_16,
+                "This is a tooltip for Button 1");
+
+            return myButtonData1.Data;
+        }
+    }
+}
